@@ -1,0 +1,9 @@
+* text=auto eol=lf
+
+# Treat lockfiles as text
+yarn.lock text
+package-lock.json text
+composer.lock text
+
+# Docs
+docs/* linguist-documentation
