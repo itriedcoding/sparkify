@@ -1,4 +1,4 @@
-# Contributing to Coreon
+# Contributing to Sparkify
 
 Thanks for your interest in contributing!
 
@@ -8,7 +8,7 @@ Thanks for your interest in contributing!
 
 ### Backend
 ```
-cd coreon
+cd sparkify
 composer install
 composer run start
 ```
@@ -17,6 +17,9 @@ Run tests:
 ```
 composer test
 ```
+
+Static analysis and style:
+- Run PHP CS Fixer if installed locally (`php-cs-fixer fix`)
 
 ### Frontend
 ```
@@ -30,17 +33,27 @@ Build:
 npm run build
 ```
 
+Format/Lint:
+```
+npx prettier -w .
+npm run lint
+```
+
 ## Commit messages
-Use Conventional Commits (e.g., `feat:`, `fix:`, `docs:`, `chore:`).
+Use Conventional Commits (e.g., `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`).
 
 ## Pull Requests
 - Include tests where possible
 - Update docs (`README.md`) if needed
 - Keep PRs focused and small
+- Ensure CI passes (PHP unit tests, web build)
 
 ## Code style
-- PHP: Follow PSR-12; run a formatter if available
-- TypeScript: Use ESLint (next/core-web-vitals) and Prettier
+- PHP: Follow PSR-12; prefer explicit types and early returns
+- TypeScript: Use ESLint (next/core-web-vitals) and Prettier; favor typed APIs
 
 ## Reporting issues
 Use GitHub Issues. Include steps to reproduce, expected/actual behavior, and environment details.
+
+## Security
+Report vulnerabilities privately via `security@your-domain.example` (see `SECURITY.md`).
