@@ -10,6 +10,7 @@ use Sparkify\Core\Http\Middleware\RoutingMiddleware;
 use Sparkify\Core\Http\Middleware\CorsMiddleware;
 use Sparkify\Core\Http\Middleware\RequestIdMiddleware;
 use Sparkify\Core\Http\Middleware\RequestLoggingMiddleware;
+use Sparkify\Core\Http\Middleware\RateLimitMiddleware;
 use Sparkify\Core\Routing\Router;
 use DI\Container;
 use Monolog\Logger;
@@ -64,6 +65,7 @@ final class HttpKernel
 	{
 		$this->addMiddleware(new ErrorHandlingMiddleware($this->container));
 		$this->addMiddleware(new RequestIdMiddleware());
+		$this->addMiddleware(new RateLimitMiddleware(120, 60));
 		$this->addMiddleware(new RequestLoggingMiddleware($this->logger));
 		$this->addMiddleware(new CorsMiddleware());
 		$this->addMiddleware(new JsonBodyParserMiddleware());

@@ -1,11 +1,13 @@
 <?php
 
 use Coreon\Core\Support\Env;
-use Doctrine\DBAL\Configuration;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Connection;
 use Psr\Log\LoggerInterface;
 use Monolog\Logger;
+use Psr\SimpleCache\CacheInterface;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Symfony\Component\Cache\Psr16Cache;
 
 return [
 	Connection::class => static function (): Connection {
@@ -18,5 +20,9 @@ return [
 	},
 	LoggerInterface::class => static function ($container) {
 		return $container->get(Logger::class);
+	},
+	CacheInterface::class => static function () {
+		$pool = new ArrayAdapter();
+		return new Psr16Cache($pool);
 	},
 ];

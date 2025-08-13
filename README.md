@@ -25,8 +25,10 @@ Sparkify focuses on developer ergonomics, explicitness over magic, performance-f
   - [Error Handling](#error-handling)
   - [JSON Body Parsing](#json-body-parsing)
   - [Request Correlation and Logging](#request-correlation-and-logging)
+  - [Rate Limiting](#rate-limiting)
 - [Dependency Injection](#dependency-injection)
 - [Database (Doctrine DBAL)](#database-doctrine-dbal)
+- [Caching](#caching)
 - [Logging](#logging)
 - [CLI Tooling](#cli-tooling)
 - [Frontend (Next.js)](#frontend-nextjs)
@@ -58,15 +60,16 @@ Sparkify pairs a lightweight PHP 8+ runtime (FastRoute, HttpFoundation, PHP-DI) 
   - Dotenv and centralized Config repository
   - Doctrine DBAL for database access
   - CORS and JSON body parsing middleware
-  - RequestId and RequestLogging middleware
+  - RequestId, RequestLogging, and RateLimit middleware
   - Symfony Console CLI (e.g., route:list)
 - Next.js 14 App Router (TypeScript + Tailwind)
 - Reverse-proxy rewrites from web to API (`/api/*` -> `:8000`)
 - Dockerized dev environment for one-command startup
 - Testing (PHPUnit), EditorConfig, ESLint, PHP CS Fixer, GitHub Actions CI
+- .env.example, Makefile, Prettier, Security Policy, Issue templates
 
 ## Architecture
-- `coreon/` — Sparkify PHP framework + app layer
+- `sparkify/` — Sparkify PHP framework + app layer
   - `src/Core` — framework internals (kernel, router, middleware, support)
   - `app/Http/Controllers` — application controllers
   - `routes/` — define `web.php` and `api.php`
@@ -75,23 +78,23 @@ Sparkify pairs a lightweight PHP 8+ runtime (FastRoute, HttpFoundation, PHP-DI) 
 
 ### Diagram
 ```
-Client -> Next.js (web) -> rewrites /api/* -> Sparkify (coreon)
+Client -> Next.js (web) -> rewrites /api/* -> Sparkify (sparkify)
                                   
-Sparkify HttpKernel: ErrorHandling -> RequestId -> RequestLogging -> CORS -> JSON -> Routing -> Controller
+Sparkify HttpKernel: ErrorHandling -> RequestId -> RateLimit -> RequestLogging -> CORS -> JSON -> Routing -> Controller
 ```
 
 ## Request Lifecycle
 1. HTTP request hits `public/index.php`.
 2. `Application` bootstraps env, config, container, logger.
 3. `HttpKernel` applies middleware in order:
-   - ErrorHandling -> RequestId -> RequestLogging -> CORS -> JSON Body -> Routing
+   - ErrorHandling -> RequestId -> RateLimit -> RequestLogging -> CORS -> JSON Body -> Routing
 4. `Router` resolves and invokes controller via DI.
 5. `ResponseFactory` normalizes controller return into an HTTP response.
 
 ## Directory Layout
-- `coreon/src/Core` — framework (do not couple app directly to internals)
-- `coreon/app` — your app layer (controllers, services, domain)
-- `coreon/routes` — declarative route definitions
+- `sparkify/src/Core` — framework (do not couple app directly to internals)
+- `sparkify/app` — your app layer (controllers, services, domain)
+- `sparkify/routes` — declarative route definitions
 - `web/app` — Next.js routes and pages
 
 ## Quick Start
@@ -105,7 +108,7 @@ docker compose up --build
 ### Local
 Backend:
 ```bash
-cd coreon
+cd sparkify
 composer install
 composer run start
 # http://localhost:8000
@@ -119,10 +122,11 @@ npm run dev
 ```
 
 ## Configuration
-Sparkify reads environment variables from `coreon/.env` and structured config from `coreon/config/*.php`.
+Sparkify reads environment variables from `sparkify/.env` and structured config from `sparkify/config/*.php`.
 
 - PHP timezone is set via `config/app.php`.
 - CORS is configured via `config/app.php['cors']`.
+- Copy `sparkify/.env.example` to `sparkify/.env` and adjust.
 
 ### Environment Variables
 Common keys:
@@ -141,7 +145,7 @@ Configured in `config/app.php` under `cors`:
 
 ## HTTP
 ### Routing
-Define routes in `coreon/routes/api.php` and `coreon/routes/web.php`:
+Define routes in `sparkify/routes/api.php` and `sparkify/routes/web.php`:
 ```php
 $router->get('/api/health', [\App\Http\Controllers\HealthController::class, 'index'], 'api.health');
 $router->get('/api/v1/hello/{name}', [\App\Http\Controllers\HelloController::class, 'greet'], 'api.v1.hello');
@@ -162,6 +166,7 @@ Return values are normalized by `ResponseFactory`:
 Registered in `HttpKernel` order-sensitive pipeline:
 - `ErrorHandlingMiddleware`
 - `RequestIdMiddleware`
+- `RateLimitMiddleware`
 - `RequestLoggingMiddleware`
 - `CorsMiddleware`
 - `JsonBodyParserMiddleware`
@@ -178,38 +183,34 @@ If `Content-Type: application/json` and a non-empty body, the JSON is decoded in
 - `X-Request-Id` header is generated if absent and echoed on responses.
 - Structured log entry per request: `method`, `path`, `status`, `duration_ms`, `request_id`.
 
+### Rate Limiting
+- Token-bucket style limiter via `RateLimitMiddleware(limit=120, window=60)`.
+- Returns `429 Too Many Requests` with standard `Retry-After` and `X-RateLimit-*` headers.
+
 ## Dependency Injection
 - Container built in `Application::buildContainer()`.
-- Extend bindings in `config/container.php`.
+- Extend bindings in `sparkify/config/container.php`.
 - Controllers and handlers can type-hint services; the container will provide them.
 
 ## Database (Doctrine DBAL)
 - Configure via `DATABASE_URL` or `DB_*`.
 - Access a `Doctrine\DBAL\Connection` via DI.
-- Example:
-```php
-use Doctrine\DBAL\Connection;
 
-final class UserController {
-	public function __construct(private Connection $db) {}
-	public function list(): array {
-		return $this->db->fetchAllAssociative('SELECT id, name FROM users');
-	}
-}
-```
+## Caching
+- PSR-16 `CacheInterface` binding backed by Symfony ArrayAdapter for easy injection and future swap.
 
 ## Logging
-- Monolog logs to `coreon/storage/logs/sparkify.log`.
+- Monolog logs to `sparkify/storage/logs/sparkify.log`.
 - Use `Logger` via DI for structured logs.
 
 ## CLI Tooling
 - `php bin/sparkify route:list` — list all registered routes.
-- Add commands by composing a Symfony Console `Application` or registering commands.
+- Makefile included for common tasks: `make up`, `make down`, `make phpunit`, `make build`.
 
 ## Frontend (Next.js)
 - TypeScript + Tailwind, App Router in `web/app`.
 - `next.config.mjs` proxies `/api/*` to `http://localhost:8000/api/*`.
-- Example page calling API: `web/app/page.tsx`.
+- Prettier config added at `web/.prettierrc`.
 
 ## API Examples
 - `GET /api/health` — health info and environment
@@ -218,15 +219,16 @@ final class UserController {
 ## Security
 - Restrict `CORS_ALLOWED_ORIGINS` in production.
 - Terminate TLS at a reverse proxy (e.g., nginx/Traefik) in production.
-- Consider rate limiting and authentication middlewares for public endpoints.
+- SECURITY policy in `SECURITY.md`.
 
 ## Testing
-- `cd coreon && composer test`
-- Add tests in `coreon/tests/` (PHPUnit 11.x).
+- `cd sparkify && composer test`
+- Add tests in `sparkify/tests/` (PHPUnit 11.x).
 
 ## Linting & Formatting
-- PHP CS Fixer config at `coreon/.php-cs-fixer.dist.php` (PSR-12, short arrays, etc.)
+- PHP CS Fixer config at `sparkify/.php-cs-fixer.dist.php` (PSR-12, short arrays, etc.)
 - ESLint config at `web/.eslintrc.json` (next/core-web-vitals)
+- Prettier config at `web/.prettierrc`
 - EditorConfig and `.gitattributes` at repo root
 
 ## CI/CD
@@ -254,7 +256,7 @@ final class UserController {
 ## Roadmap
 - Authentication middleware and guards
 - Request/response schema validation
-- Caching integrations (Symfony Cache)
+- Caching integrations (Symfony Cache, Redis)
 - Background jobs and queues
 - OpenAPI generation and docs site
 
