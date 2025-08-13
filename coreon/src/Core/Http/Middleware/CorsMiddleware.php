@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Coreon\Core\Http\Middleware;
+namespace Sparkify\Core\Http\Middleware;
 
-use Coreon\Core\Support\Config;
+use Sparkify\Core\Support\Config;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 

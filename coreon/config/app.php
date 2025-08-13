@@ -1,9 +1,9 @@
 <?php
 
-use Coreon\Core\Support\Env;
+use Sparkify\Core\Support\Env;
 
 return [
-	'name' => Env::get('APP_NAME', 'Coreon'),
+	'name' => Env::get('APP_NAME', 'Sparkify'),
 	'env' => Env::get('APP_ENV', 'local'),
 	'debug' => Env::bool('APP_DEBUG', true),
 	'timezone' => Env::get('APP_TIMEZONE', 'UTC'),

@@ -1,13 +1,14 @@
 ## Summary
 
-This PR introduces Coreon (advanced PHP framework) and a Next.js TypeScript frontend, with full dev tooling and Docker support.
+This PR introduces or updates Sparkify (advanced PHP framework) and the Sparkify Next.js (TypeScript) frontend, with full dev tooling and Docker support.
 
 ## Changes
-- Coreon framework with DI, routing, middleware (errors, CORS, JSON), logging, env/config, console, Doctrine DBAL
+- Sparkify framework with DI, routing, middleware (errors, CORS, JSON, request ID, request logging), logging, env/config, console, Doctrine DBAL
 - API endpoints: `/api/health`, `/api/v1/hello/{name}`
-- Next.js 14 app (TypeScript, Tailwind, App Router) proxying `/api/*` to Coreon
+- Next.js 14 app (TypeScript, Tailwind, App Router) proxying `/api/*` to Sparkify
 - Dockerfiles and docker-compose for one-command local dev
-- Basic PHPUnit setup and a starter test
+- PHPUnit setup and a starter test
+- Linting/config: EditorConfig, ESLint (web), PHP CS Fixer (php), GitHub Actions CI
 
 ## How to test
 1. Docker

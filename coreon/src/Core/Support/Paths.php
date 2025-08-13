@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Coreon\Core\Support;
+namespace Sparkify\Core\Support;
 
 final class Paths
 {

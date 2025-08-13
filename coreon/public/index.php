@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Coreon\Core\Application;
+use Sparkify\Core\Application;
 use Symfony\Component\HttpFoundation\Request;
 
 require __DIR__ . '/../vendor/autoload.php';
