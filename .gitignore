@@ -1,0 +1,19 @@
+# Node
+node_modules/
+**/node_modules/
+.npmrc
+
+# Next.js
+.next/
+out/
+
+# PHP
+vendor/
+composer.lock
+storage/logs/
+storage/cache/
+
+# Env & OS
+.env
+.env.*
+.DS_Store

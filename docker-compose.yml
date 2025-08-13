@@ -1,0 +1,28 @@
+version: '3.9'
+services:
+  coreon:
+    build:
+      context: ./coreon
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./coreon:/app
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=1
+    command: sh -lc "composer install && php -S 0.0.0.0:8000 -t public public/index.php"
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./web:/usr/src/app
+    environment:
+      - NODE_ENV=development
+    command: sh -lc "npm install && npm run dev"
+    depends_on:
+      - coreon

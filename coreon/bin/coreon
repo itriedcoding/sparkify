@@ -1,0 +1,33 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use Symfony\Component\Console\Application as ConsoleApplication;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+use Coreon\Core\Application as CoreonApp;
+use Coreon\Core\Routing\Router;
+
+$basePath = realpath(__DIR__ . '/..');
+$coreon = new CoreonApp($basePath);
+$routerProperty = new ReflectionProperty(Coreon\Core\HttpKernel::class, 'router');
+$routerProperty->setAccessible(true);
+$router = $routerProperty->getValue($coreon->getHttpKernel());
+
+$cli = new ConsoleApplication('Coreon', '0.1.0');
+
+$cli->register('route:list')
+	->setDescription('List all registered routes')
+	->setCode(function (InputInterface $input, OutputInterface $output) use ($router): int {
+		$routes = $router->list();
+		foreach ($routes as $route) {
+			$output->writeln(sprintf('%-6s %-40s %s', $route['method'], $route['path'], $route['name'] ?? ''));
+		}
+		return Command::SUCCESS;
+	});
+
+$cli->run();
