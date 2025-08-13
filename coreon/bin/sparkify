@@ -9,16 +9,15 @@ use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Coreon\Core\Application as CoreonApp;
-use Coreon\Core\Routing\Router;
+use Sparkify\Core\Application as SparkifyApp;
 
 $basePath = realpath(__DIR__ . '/..');
-$coreon = new CoreonApp($basePath);
-$routerProperty = new ReflectionProperty(Coreon\Core\HttpKernel::class, 'router');
+$app = new SparkifyApp($basePath);
+$routerProperty = new ReflectionProperty(Sparkify\Core\HttpKernel::class, 'router');
 $routerProperty->setAccessible(true);
-$router = $routerProperty->getValue($coreon->getHttpKernel());
+$router = $routerProperty->getValue($app->getHttpKernel());
 
-$cli = new ConsoleApplication('Coreon', '0.1.0');
+$cli = new ConsoleApplication('Sparkify', '0.1.0');
 
 $cli->register('route:list')
 	->setDescription('List all registered routes')

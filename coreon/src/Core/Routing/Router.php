@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Coreon\Core\Routing;
+namespace Sparkify\Core\Routing;
 
 use DI\Container;
 use FastRoute\Dispatcher;
@@ -104,17 +104,17 @@ final class Router
 			[$class, $method] = explode('@', $handler, 2);
 			$controller = $this->container->get($class);
 			$result = $controller->{$method}($request, ...array_values($vars));
-			return \Coreon\Core\Http\ResponseFactory::from($result);
+			return \Sparkify\Core\Http\ResponseFactory::from($result);
 		}
 		if (is_array($handler) && is_string($handler[0])) {
 			$controller = $this->container->get($handler[0]);
 			$method = $handler[1];
 			$result = $controller->{$method}($request, ...array_values($vars));
-			return \Coreon\Core\Http\ResponseFactory::from($result);
+			return \Sparkify\Core\Http\ResponseFactory::from($result);
 		}
 		if (is_callable($handler)) {
 			$result = $handler($request, ...array_values($vars));
-			return \Coreon\Core\Http\ResponseFactory::from($result);
+			return \Sparkify\Core\Http\ResponseFactory::from($result);
 		}
 		return new Response('Bad handler', 500);
 	}

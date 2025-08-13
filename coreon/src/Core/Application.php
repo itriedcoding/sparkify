@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Coreon\Core;
+namespace Sparkify\Core;
 
-use Coreon\Core\Support\Config;
-use Coreon\Core\Support\Env;
-use Coreon\Core\Support\Paths;
+use Sparkify\Core\Support\Config;
+use Sparkify\Core\Support\Env;
+use Sparkify\Core\Support\Paths;
 use DI\Container;
 use DI\ContainerBuilder;
 use Monolog\Handler\StreamHandler;
@@ -69,11 +69,11 @@ final class Application
 
 	private function createLogger(): Logger
 	{
-		$logPath = $this->path('storage/logs/coreon.log');
+		$logPath = $this->path('storage/logs/sparkify.log');
 		if (!is_dir(dirname($logPath))) {
 			mkdir(dirname($logPath), 0777, true);
 		}
-		$logger = new Logger('coreon');
+		$logger = new Logger('sparkify');
 		$logger->pushHandler(new StreamHandler($logPath, Level::Debug));
 		return $logger;
 	}

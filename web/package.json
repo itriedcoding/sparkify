@@ -1,7 +1,8 @@
 {
-	"name": "coreon-web",
+	"name": "sparkify-web",
 	"private": true,
 	"version": "0.1.0",
+	"description": "Sparkify Next.js frontend",
 	"scripts": {
 		"dev": "next dev",
 		"build": "next build",

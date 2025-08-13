@@ -2,8 +2,8 @@ import './globals.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-	title: 'Coreon Web',
-	description: 'Next.js frontend for Coreon framework',
+	title: 'Sparkify Web',
+	description: 'Next.js frontend for Sparkify framework',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

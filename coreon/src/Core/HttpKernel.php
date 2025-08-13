@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Coreon\Core;
+namespace Sparkify\Core;
 
-use Coreon\Core\Http\Middleware\ErrorHandlingMiddleware;
-use Coreon\Core\Http\Middleware\JsonBodyParserMiddleware;
-use Coreon\Core\Http\Middleware\RoutingMiddleware;
-use Coreon\Core\Http\Middleware\CorsMiddleware;
-use Coreon\Core\Routing\Router;
+use Sparkify\Core\Http\Middleware\ErrorHandlingMiddleware;
+use Sparkify\Core\Http\Middleware\JsonBodyParserMiddleware;
+use Sparkify\Core\Http\Middleware\RoutingMiddleware;
+use Sparkify\Core\Http\Middleware\CorsMiddleware;
+use Sparkify\Core\Http\Middleware\RequestIdMiddleware;
+use Sparkify\Core\Http\Middleware\RequestLoggingMiddleware;
+use Sparkify\Core\Routing\Router;
 use DI\Container;
 use Monolog\Logger;
 use Symfony\Component\HttpFoundation\Request;
@@ -47,7 +49,6 @@ final class HttpKernel
 
 	public function terminate(Request $request, Response $response): void
 	{
-		// Placeholder for terminating logic (logging, events, etc.)
 		$this->logger->debug('Request terminated', [
 			'status' => $response->getStatusCode(),
 			'path' => $request->getPathInfo(),
@@ -62,6 +63,8 @@ final class HttpKernel
 	private function registerCoreMiddleware(): void
 	{
 		$this->addMiddleware(new ErrorHandlingMiddleware($this->container));
+		$this->addMiddleware(new RequestIdMiddleware());
+		$this->addMiddleware(new RequestLoggingMiddleware($this->logger));
 		$this->addMiddleware(new CorsMiddleware());
 		$this->addMiddleware(new JsonBodyParserMiddleware());
 		$this->addMiddleware(new RoutingMiddleware($this->router, $this->container));

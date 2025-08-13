@@ -1,6 +1,6 @@
 {
-	"name": "coreon/framework",
-	"description": "Coreon: An advanced, modular PHP framework.",
+	"name": "sparkify/framework",
+	"description": "Sparkify: An advanced, modular PHP framework.",
 	"type": "library",
 	"license": "MIT",
 	"require": {
@@ -21,7 +21,7 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"Coreon\\": "src/",
+			"Sparkify\\": "src/",
 			"App\\": "app/"
 		}
 	},
@@ -32,7 +32,7 @@
 	},
 	"scripts": {
 		"start": "php -S 0.0.0.0:8000 -t public public/index.php",
-		"console": "php bin/coreon",
+		"console": "php bin/sparkify",
 		"test": "phpunit --colors=always"
 	},
 	"config": {

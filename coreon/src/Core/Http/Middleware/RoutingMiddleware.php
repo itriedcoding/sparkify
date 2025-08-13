@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Coreon\Core\Http\Middleware;
+namespace Sparkify\Core\Http\Middleware;
 
-use Coreon\Core\Routing\Router;
+use Sparkify\Core\Routing\Router;
 use DI\Container;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
