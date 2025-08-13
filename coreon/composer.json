@@ -1,0 +1,42 @@
+{
+	"name": "coreon/framework",
+	"description": "Coreon: An advanced, modular PHP framework.",
+	"type": "library",
+	"license": "MIT",
+	"require": {
+		"php": ">=8.1",
+		"nikic/fast-route": "^1.3",
+		"php-di/php-di": "^7.0",
+		"monolog/monolog": "^3.6",
+		"vlucas/phpdotenv": "^5.6",
+		"symfony/http-foundation": "^7.1",
+		"symfony/cache": "^7.1",
+		"filp/whoops": "^2.15",
+		"doctrine/dbal": "^4.2",
+		"symfony/console": "^7.1",
+		"league/event": "^3.0"
+	},
+	"require-dev": {
+		"phpunit/phpunit": "^11.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"Coreon\\": "src/",
+			"App\\": "app/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"Tests\\": "tests/"
+		}
+	},
+	"scripts": {
+		"start": "php -S 0.0.0.0:8000 -t public public/index.php",
+		"console": "php bin/coreon",
+		"test": "phpunit --colors=always"
+	},
+	"config": {
+		"sort-packages": true,
+		"optimize-autoloader": true
+	}
+}
