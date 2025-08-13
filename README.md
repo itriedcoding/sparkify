@@ -18,6 +18,7 @@ Sparkify focuses on developer ergonomics, explicitness over magic, performance-f
 - [Configuration](#configuration)
   - [Environment Variables](#environment-variables)
   - [CORS](#cors)
+  - [JWT](#jwt)
 - [HTTP](#http)
   - [Routing](#routing)
   - [Controllers](#controllers)
@@ -26,6 +27,8 @@ Sparkify focuses on developer ergonomics, explicitness over magic, performance-f
   - [JSON Body Parsing](#json-body-parsing)
   - [Request Correlation and Logging](#request-correlation-and-logging)
   - [Rate Limiting](#rate-limiting)
+  - [ETag and Compression](#etag-and-compression)
+  - [Validation (FormRequest)](#validation-formrequest)
 - [Dependency Injection](#dependency-injection)
 - [Database (Doctrine DBAL)](#database-doctrine-dbal)
 - [Caching](#caching)
@@ -60,7 +63,9 @@ Sparkify pairs a lightweight PHP 8+ runtime (FastRoute, HttpFoundation, PHP-DI) 
   - Dotenv and centralized Config repository
   - Doctrine DBAL for database access
   - CORS and JSON body parsing middleware
-  - RequestId, RequestLogging, and RateLimit middleware
+  - RequestId, RateLimit, RequestLogging, ETag, and Compression middleware
+  - JWT authentication middleware and config
+  - FormRequest validation (Respect/Validation)
   - Symfony Console CLI (e.g., route:list)
 - Next.js 14 App Router (TypeScript + Tailwind)
 - Reverse-proxy rewrites from web to API (`/api/*` -> `:8000`)
@@ -73,21 +78,21 @@ Sparkify pairs a lightweight PHP 8+ runtime (FastRoute, HttpFoundation, PHP-DI) 
   - `src/Core` — framework internals (kernel, router, middleware, support)
   - `app/Http/Controllers` — application controllers
   - `routes/` — define `web.php` and `api.php`
-  - `config/` — environment, CORS, services
+  - `config/` — environment, CORS, services, auth (JWT)
 - `web/` — Next.js app (App Router, TS, Tailwind)
 
 ### Diagram
 ```
 Client -> Next.js (web) -> rewrites /api/* -> Sparkify (sparkify)
                                   
-Sparkify HttpKernel: ErrorHandling -> RequestId -> RateLimit -> RequestLogging -> CORS -> JSON -> Routing -> Controller
+Sparkify HttpKernel: ErrorHandling -> RequestId -> RateLimit -> RequestLogging -> CORS -> JSON -> Routing -> ETag -> Compression -> Response
 ```
 
 ## Request Lifecycle
 1. HTTP request hits `public/index.php`.
 2. `Application` bootstraps env, config, container, logger.
 3. `HttpKernel` applies middleware in order:
-   - ErrorHandling -> RequestId -> RateLimit -> RequestLogging -> CORS -> JSON Body -> Routing
+   - ErrorHandling -> RequestId -> RateLimit -> RequestLogging -> CORS -> JSON Body -> Routing -> ETag -> Compression
 4. `Router` resolves and invokes controller via DI.
 5. `ResponseFactory` normalizes controller return into an HTTP response.
 
@@ -126,41 +131,27 @@ Sparkify reads environment variables from `sparkify/.env` and structured config 
 
 - PHP timezone is set via `config/app.php`.
 - CORS is configured via `config/app.php['cors']`.
+- JWT is configured via `config/auth.php` and `JWT_*` envs.
 - Copy `sparkify/.env.example` to `sparkify/.env` and adjust.
 
 ### Environment Variables
-Common keys:
-- `APP_NAME` — default: Sparkify
-- `APP_ENV` — default: local
-- `APP_DEBUG` — default: true
-- `APP_TIMEZONE` — default: UTC
-- `APP_URL` — default: http://localhost:8000
-- `DATABASE_URL` — optional DSN (e.g., mysql://user:pass@127.0.0.1:3306/db)
-- or `DB_DRIVER`, `DB_PATH` for SQLite
-- `CORS_ALLOWED_ORIGINS` — comma-separated allowed origins (e.g., `http://localhost:3000,https://example.com`)
+See `.env.example` for the full set. Highlights:
+- `APP_*`, DB `DATABASE_URL` or `DB_*`, `CORS_ALLOWED_ORIGINS`
+- `JWT_ISSUER`, `JWT_AUDIENCE`, `JWT_TTL`, `JWT_ALG`, `JWT_SECRET`
 
 ### CORS
-Configured in `config/app.php` under `cors`:
-- `allowed_origins`, `allowed_methods`, `allowed_headers`, `exposed_headers`, `allow_credentials`, `max_age`.
+Configured in `config/app.php` under `cors`.
+
+### JWT
+- Configure in `config/auth.php` and `.env`.
+- Protect routes by adding `JwtAuthMiddleware` to the pipeline or implementing route groups.
 
 ## HTTP
 ### Routing
-Define routes in `sparkify/routes/api.php` and `sparkify/routes/web.php`:
-```php
-$router->get('/api/health', [\App\Http\Controllers\HealthController::class, 'index'], 'api.health');
-$router->get('/api/v1/hello/{name}', [\App\Http\Controllers\HelloController::class, 'greet'], 'api.v1.hello');
-```
-Handler styles supported:
-- `"Controller@method"`
-- `[Controller::class, 'method']`
-- `function (Request $r) { ... }`
+Define routes in `sparkify/routes/api.php` and `sparkify/routes/web.php`.
 
 ### Controllers
-Return values are normalized by `ResponseFactory`:
-- `Symfony\Component\HttpFoundation\Response` returns as-is
-- `array|object` -> `JsonResponse`
-- `string` -> `Response`
-- `null` -> `204 No Content`
+Return values are normalized by `ResponseFactory`.
 
 ### Middleware
 Registered in `HttpKernel` order-sensitive pipeline:
@@ -171,94 +162,75 @@ Registered in `HttpKernel` order-sensitive pipeline:
 - `CorsMiddleware`
 - `JsonBodyParserMiddleware`
 - `RoutingMiddleware`
+- `ETagMiddleware`
+- `CompressionMiddleware`
 
 ### Error Handling
-- In debug (`app.debug = true`): Whoops pretty pages
-- In production: generic `500 Internal Server Error`
+Pretty error pages in debug, generic 500 otherwise.
 
 ### JSON Body Parsing
-If `Content-Type: application/json` and a non-empty body, the JSON is decoded into `$request->request`.
+If `Content-Type: application/json`, JSON is decoded into `$request->request`.
 
 ### Request Correlation and Logging
-- `X-Request-Id` header is generated if absent and echoed on responses.
-- Structured log entry per request: `method`, `path`, `status`, `duration_ms`, `request_id`.
+`X-Request-Id` header and structured logs.
 
 ### Rate Limiting
-- Token-bucket style limiter via `RateLimitMiddleware(limit=120, window=60)`.
-- Returns `429 Too Many Requests` with standard `Retry-After` and `X-RateLimit-*` headers.
+Enforces request limits per IP and method; sends Retry-After and X-RateLimit headers.
+
+### ETag and Compression
+Conditional GETs via ETag; gzip compression when accepted by clients.
+
+### Validation (FormRequest)
+Create a FormRequest class that returns Respect/Validation rules and call `validate($request)`.
 
 ## Dependency Injection
 - Container built in `Application::buildContainer()`.
 - Extend bindings in `sparkify/config/container.php`.
-- Controllers and handlers can type-hint services; the container will provide them.
 
 ## Database (Doctrine DBAL)
-- Configure via `DATABASE_URL` or `DB_*`.
-- Access a `Doctrine\DBAL\Connection` via DI.
+Configure via env; inject `Doctrine\DBAL\Connection` where needed.
 
 ## Caching
-- PSR-16 `CacheInterface` binding backed by Symfony ArrayAdapter for easy injection and future swap.
+PSR-16 `CacheInterface` binding (ArrayAdapter) for easy injection.
 
 ## Logging
-- Monolog logs to `sparkify/storage/logs/sparkify.log`.
-- Use `Logger` via DI for structured logs.
+Monolog writes to `sparkify/storage/logs/sparkify.log`.
 
 ## CLI Tooling
-- `php bin/sparkify route:list` — list all registered routes.
-- Makefile included for common tasks: `make up`, `make down`, `make phpunit`, `make build`.
+`php bin/sparkify route:list` and Makefile targets.
 
 ## Frontend (Next.js)
-- TypeScript + Tailwind, App Router in `web/app`.
-- `next.config.mjs` proxies `/api/*` to `http://localhost:8000/api/*`.
-- Prettier config added at `web/.prettierrc`.
+TS + Tailwind; rewrites `/api/*` to Sparkify.
 
 ## API Examples
-- `GET /api/health` — health info and environment
-- `GET /api/v1/hello/{name}` — greeting payload
+- `GET /api/health` — health checks
+- `GET /api/metrics` — uptime/memory
+- `GET /api/v1/hello/{name}` — greeting
 
 ## Security
-- Restrict `CORS_ALLOWED_ORIGINS` in production.
-- Terminate TLS at a reverse proxy (e.g., nginx/Traefik) in production.
-- SECURITY policy in `SECURITY.md`.
+- Set strong `JWT_SECRET` in production
+- Restrict CORS; run behind TLS
 
 ## Testing
-- `cd sparkify && composer test`
-- Add tests in `sparkify/tests/` (PHPUnit 11.x).
+Run `cd sparkify && composer test`.
 
 ## Linting & Formatting
-- PHP CS Fixer config at `sparkify/.php-cs-fixer.dist.php` (PSR-12, short arrays, etc.)
-- ESLint config at `web/.eslintrc.json` (next/core-web-vitals)
-- Prettier config at `web/.prettierrc`
-- EditorConfig and `.gitattributes` at repo root
+PHP CS Fixer, ESLint, Prettier, EditorConfig.
 
 ## CI/CD
-- GitHub Actions workflow `.github/workflows/ci.yml`:
-  - PHP job: install deps + run PHPUnit
-  - Web job: install deps + typecheck + lint + build
+GitHub Actions builds and tests web and PHP.
 
 ## Performance & Tuning
-- Use PHP 8.3+ for JIT and performance baseline.
-- Keep middleware lean and order-sensitive (short-circuit early when possible).
-- Prefer JSON responses and avoid heavy templating on the server.
-- Enable opcache in production; consider a real web server (nginx) proxying to PHP-FPM.
+Use PHP 8.3+, enable opcache, keep middleware lean.
 
 ## Observability & Deployment
-- Correlate logs with `X-Request-Id` throughout downstream services.
-- Add health checks (`/api/health`) to orchestrators and load balancers.
-- Consider centralizing logs (ELK, Loki) and metrics (Prometheus).
+Correlated logs, health checks, central logging/metrics systems.
 
 ## FAQ
-- Q: Can I use ORM migrations?
-  A: Sparkify ships with DBAL; you can integrate Doctrine Migrations or any tool of choice.
-- Q: How do I add authentication?
-  A: Implement an auth middleware and register it before routing.
+See common Q&A in prior section.
 
 ## Roadmap
-- Authentication middleware and guards
-- Request/response schema validation
-- Caching integrations (Symfony Cache, Redis)
-- Background jobs and queues
-- OpenAPI generation and docs site
+Auth guards, schema validation, caching (Redis), queues, OpenAPI.
 
 ## Contributing
 See [`CONTRIBUTING.md`](CONTRIBUTING.md).
