@@ -8,6 +8,7 @@ use Monolog\Logger;
 use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Cache\Psr16Cache;
+use Sparkify\Core\View\ViewManager;
 
 return [
 	Connection::class => static function (): Connection {
@@ -24,5 +25,8 @@ return [
 	CacheInterface::class => static function () {
 		$pool = new ArrayAdapter();
 		return new Psr16Cache($pool);
+	},
+	ViewManager::class => static function () {
+		return new ViewManager();
 	},
 ];

@@ -7,6 +7,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Sparkify\Core\Application as SparkifyApp;
@@ -26,6 +27,26 @@ $cli->register('route:list')
 		foreach ($routes as $route) {
 			$output->writeln(sprintf('%-6s %-40s %s', $route['method'], $route['path'], $route['name'] ?? ''));
 		}
+		return Command::SUCCESS;
+	});
+
+$cli->register('make:controller')
+	->setDescription('Generate a new controller')
+	->addArgument('name', InputArgument::REQUIRED, 'Controller class name, e.g., FooController')
+	->setCode(function (InputInterface $input, OutputInterface $output) use ($basePath): int {
+		$name = (string)$input->getArgument('name');
+		$name = preg_replace('/Controller$/', '', $name) . 'Controller';
+		$ns = 'App\\Http\\Controllers';
+		$dir = $basePath . '/app/Http/Controllers';
+		$path = $dir . '/' . $name . '.php';
+		if (!is_dir($dir)) { mkdir($dir, 0777, true); }
+		if (file_exists($path)) {
+			$output->writeln('<error>Controller already exists:</error> ' . $path);
+			return Command::FAILURE;
+		}
+		$code = "<?php\n\ndeclare(strict_types=1);\n\nnamespace $ns;\n\nuse Symfony\\Component\\HttpFoundation\\Request;\n\nfinal class $name\n{\n\tpublic function index(Request $request): array\n\t{\n\t\treturn ['message' => '$name'];\n\t}\n}\n";
+		file_put_contents($path, $code);
+		$output->writeln('<info>Created controller:</info> ' . $path);
 		return Command::SUCCESS;
 	});
 
