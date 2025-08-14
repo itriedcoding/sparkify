@@ -2,6 +2,13 @@
 
 Thanks for your interest in contributing!
 
+## Quickstart checklist
+- Fork and clone the repo
+- Create a feature branch from `main`
+- Copy `sparkify/.env.example` to `sparkify/.env` and set secrets
+- Run backend and frontend locally; ensure `/api/health` is OK
+- Write tests and docs with your change
+
 ## Development setup
 - Backend: PHP 8.1+, Composer
 - Frontend: Node.js 18+, npm
@@ -13,9 +20,10 @@ composer install
 composer run start
 ```
 
-Run tests:
+Run tests and static analysis:
 ```
 composer test
+composer stan
 ```
 
 JWT setup (dev):
@@ -35,6 +43,7 @@ Validation:
 
 Static analysis and style:
 - Run PHP CS Fixer if installed locally (`php-cs-fixer fix`)
+- Consider adding phpstan.neon and increasing level over time
 
 ### Frontend
 ```
