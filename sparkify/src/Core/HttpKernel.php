@@ -13,6 +13,8 @@ use Sparkify\Core\Http\Middleware\RequestLoggingMiddleware;
 use Sparkify\Core\Http\Middleware\RateLimitMiddleware;
 use Sparkify\Core\Http\Middleware\ETagMiddleware;
 use Sparkify\Core\Http\Middleware\CompressionMiddleware;
+use Sparkify\Core\Http\Middleware\SessionMiddleware;
+use Sparkify\Core\Http\Middleware\CsrfMiddleware;
 use Sparkify\Core\Routing\Router;
 use DI\Container;
 use Monolog\Logger;
@@ -66,6 +68,8 @@ final class HttpKernel
 	private function registerCoreMiddleware(): void
 	{
 		$this->addMiddleware(new ErrorHandlingMiddleware($this->container));
+		$this->addMiddleware(new SessionMiddleware());
+		$this->addMiddleware(new CsrfMiddleware());
 		$this->addMiddleware(new RequestIdMiddleware());
 		$this->addMiddleware(new RateLimitMiddleware(120, 60));
 		$this->addMiddleware(new RequestLoggingMiddleware($this->logger));
