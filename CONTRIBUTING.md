@@ -18,6 +18,9 @@ Run tests:
 composer test
 ```
 
+JWT setup (dev):
+- Copy `sparkify/.env.example` to `sparkify/.env` and set `JWT_SECRET`
+
 Static analysis and style:
 - Run PHP CS Fixer if installed locally (`php-cs-fixer fix`)
 
