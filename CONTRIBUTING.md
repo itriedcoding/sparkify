@@ -21,6 +21,18 @@ composer test
 JWT setup (dev):
 - Copy `sparkify/.env.example` to `sparkify/.env` and set `JWT_SECRET`
 
+Scaffolding:
+```
+php bin/sparkify make:controller FooController
+```
+
+Views:
+- Add Twig templates under `sparkify/resources/views`
+- Configure via `sparkify/config/view.php`
+
+Validation:
+- Create `FormRequest` subclasses using Respect/Validation rules
+
 Static analysis and style:
 - Run PHP CS Fixer if installed locally (`php-cs-fixer fix`)
 
