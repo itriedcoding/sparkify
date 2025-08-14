@@ -331,3 +331,61 @@ See [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
 ## License
 MIT — see [`LICENSE`](LICENSE).
+
+## Additional Platform Capabilities
+- Mailer: Send email via Symfony Mailer (`config/mail.php`)
+- Translations (i18n): Configure default locale and message catalogs (`config/i18n.php`)
+- Filesystem: Use Flysystem for local/cloud storage (bind in `config/container.php`)
+- DB Migrations: Integrate Doctrine Migrations for schema changes
+- GraphQL: Build schemas/resolvers with `webonyx/graphql-php`
+- OpenAPI: Annotate controllers with swagger-php and generate specs
+- CLI: Extend `bin/sparkify` with domain-specific commands
+- Config cache: Preload configuration in production for faster boot
+- Env encryption: Store secrets encrypted and decrypt on boot (customizable)
+- Multi-tenancy: Use containers and env scopes per tenant (design note)
+- Queues/Jobs: Integrate a queue worker (e.g., Redis, RabbitMQ) (design note)
+- Rate limiter storage: Swap in Redis-based token buckets for distributed limits
+- WebSockets/Realtime: Bridge with a WS server (e.g., Ratchet/Soketi) (design note)
+- SSR: Render Twig or hydrate with Next.js SSR for hybrid pages
+- SEO: Sitemap and meta generation endpoints (design note)
+
+### Mailer
+- Set `MAILER_DSN` and `MAIL_FROM` in `.env`
+- Inject `Sparkify\Core\Mail\Mailer` and call `send()`
+
+### Translations
+- Add language files under `sparkify/resources/lang/{locale}.php`
+- Set `APP_LOCALE` in `.env`
+
+### Filesystem (Flysystem)
+- Bind a `FilesystemOperator` in the container with desired adapter (local/S3)
+
+### Migrations
+- Use `doctrine/migrations`; add a CLI command (e.g., `migrations:migrate`)
+
+### GraphQL
+- Define schema and resolvers with `webonyx/graphql-php`; expose under `/api/graphql`
+
+### OpenAPI
+- Use `zircote/swagger-php` annotations; build JSON at `/api/docs.json`
+
+### Config cache
+- Write a `config:cache` CLI to precompile `config/*.php` into a single array
+
+### Env encryption
+- Add a decryptor in `Application` that loads `.env.enc` with a key
+
+### Multi-tenancy
+- Scope config and services by tenant ID from subdomain/headers
+
+### Queues
+- Add queue interfaces and a worker; push jobs from controllers
+
+### Rate limiter (Redis)
+- Replace in-memory buckets with Redis counters for distributed limits
+
+### WebSockets
+- Broadcast events to clients via a WS server; add an event emitter abstraction
+
+### SSR and SEO
+- Use Twig for server rendering; generate sitemaps and meta endpoints

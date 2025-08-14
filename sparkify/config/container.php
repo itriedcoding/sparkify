@@ -1,6 +1,6 @@
 <?php
 
-use Coreon\Core\Support\Env;
+use Sparkify\Core\Support\Env;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Connection;
 use Psr\Log\LoggerInterface;
@@ -9,6 +9,8 @@ use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Cache\Psr16Cache;
 use Sparkify\Core\View\ViewManager;
+use Sparkify\Core\Mail\Mailer as SparkifyMailer;
+use Sparkify\Core\Support\Config;
 
 return [
 	Connection::class => static function (): Connection {
@@ -28,5 +30,9 @@ return [
 	},
 	ViewManager::class => static function () {
 		return new ViewManager();
+	},
+	SparkifyMailer::class => static function () {
+		$dsn = (string)Config::get('mail.dsn', 'smtp://localhost');
+		return new SparkifyMailer($dsn);
 	},
 ];

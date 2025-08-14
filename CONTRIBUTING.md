@@ -41,6 +41,18 @@ Views:
 Validation:
 - Create `FormRequest` subclasses using Respect/Validation rules
 
+Migrations:
+- Integrate Doctrine Migrations; add commands to `bin/sparkify`
+- Write migration tests to cover schema changes
+
+GraphQL & OpenAPI:
+- Add schemas and annotations; expose `/api/graphql` and `/api/docs.json`
+- Include tests that validate schema/endpoint availability
+
+Mailer & i18n:
+- Configure `config/mail.php` and `config/i18n.php`
+- Add tests that mock Mailer and assert translated strings
+
 Static analysis and style:
 - Run PHP CS Fixer if installed locally (`php-cs-fixer fix`)
 - Consider adding phpstan.neon and increasing level over time
