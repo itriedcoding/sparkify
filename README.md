@@ -76,59 +76,208 @@ Sparkify pairs a lightweight PHP 8+ runtime (FastRoute, HttpFoundation, PHP-DI) 
 - Next.js 14 frontend with TypeScript and Tailwind
 
 ## Architecture
-... (unchanged content omitted for brevity)
+- `sparkify/` — Sparkify PHP framework + app layer
+  - `src/Core` — framework internals (kernel, router, middleware, support)
+  - `app/Http/Controllers` — application controllers
+  - `routes/` — `web.php` and `api.php`
+  - `config/` — env, app, auth (JWT), view, session, container
+- `web/` — Next.js app (App Router, TS, Tailwind)
+
+### Diagram
+```
+Client -> Next.js (web) -> rewrites /api/* -> Sparkify (sparkify)
+                                  
+Sparkify HttpKernel: ErrorHandling -> Session -> CSRF -> RequestId -> RateLimit -> RequestLogging -> CORS -> JSON -> Routing -> ETag -> Compression -> Response
+```
+
+## Request Lifecycle
+1. Request enters `public/index.php`.
+2. `Application` loads env and config, builds container, registers logger.
+3. `HttpKernel` executes middleware in order and dispatches to a controller.
+4. `ResponseFactory` normalizes controller return into an HTTP response.
+
+## Directory Layout
+- `sparkify/src/Core` — framework internals
+- `sparkify/app` — your controllers and domain code
+- `sparkify/routes` — route definitions
+- `sparkify/resources/views` — Twig templates
+- `web/app` — Next.js routes and pages
 
 ## Quick Start
 ### Docker
-... (unchanged)
+```bash
+docker compose up --build
+# Web: http://localhost:3000
+# API: http://localhost:8000
+```
 
 ### Local
-... (unchanged)
+Backend:
+```bash
+cd sparkify
+composer install
+composer run start
+# http://localhost:8000
+```
+Frontend:
+```bash
+cd web
+npm install
+npm run dev
+# http://localhost:3000
+```
 
 ### Checklist
-- Copy `sparkify/.env.example` to `sparkify/.env` and set secrets (e.g., `JWT_SECRET`)
-- Start backend and frontend; confirm `/api/health` and web are reachable
-- Run `php bin/sparkify route:list` and `npm run build` to verify toolchains
-- Add a controller via `php bin/sparkify make:controller FooController`
+- Copy `sparkify/.env.example` to `sparkify/.env`; set `JWT_SECRET`
+- Verify `http://localhost:8000/api/health` returns status ok
+- Open web at `http://localhost:3000` and confirm it proxies to the API
+- List routes: `php bin/sparkify route:list`
 
 ## Configuration
-... (unchanged with JWT/Sessions/Views noted)
+Configuration is PHP arrays in `sparkify/config/*.php` read at boot.
+- `config/app.php` — app name, env, debug, timezone, CORS
+- `config/auth.php` — JWT settings (issuer, audience, ttl, alg, secret)
+- `config/session.php` — session cookie name/flags and lifetime
+- `config/view.php` — Twig template paths and cache directory
+- `config/container.php` — DI bindings (DB, logger, cache, view manager)
+
+### Environment Variables
+Set in `.env` and read by `vlucas/phpdotenv`.
+- App: `APP_NAME`, `APP_ENV`, `APP_DEBUG`, `APP_TIMEZONE`, `APP_URL`
+- DB: `DATABASE_URL` or `DB_DRIVER`, `DB_PATH`
+- CORS: `CORS_ALLOWED_ORIGINS`
+- JWT: `JWT_ISSUER`, `JWT_AUDIENCE`, `JWT_TTL`, `JWT_ALG`, `JWT_SECRET`
+
+### CORS
+Configured under `app.cors` (allowed origins/methods/headers, credentials, max-age).
+
+### JWT
+Configure `config/auth.php` and set `JWT_*` env vars. Add `JwtAuthMiddleware` to protect endpoints.
+
+### Sessions
+`SessionMiddleware` enables cookie-based sessions using Symfony Session. Cookies are secure/httponly with configurable SameSite.
+
+### Views
+`ViewManager` renders Twig templates from `resources/views`. Cache can be enabled via `VIEW_CACHE`.
 
 ## HTTP
-... (unchanged)
+### Routing
+Define routes in `sparkify/routes/api.php` and `sparkify/routes/web.php`.
+Handlers can be `Controller@method`, `[Controller::class, 'method']`, or closures.
+
+### Controllers
+Return `Response`, array/object (JSON), string (HTML/text), or `null` (204). Use `BaseController` for helpers.
+
+### Middleware
+Order-sensitive pipeline registered in `HttpKernel`. Add your own by pushing callables.
+
+### Error Handling
+Whoops pretty pages in debug; generic 500 otherwise.
+
+### JSON Body Parsing
+`JsonBodyParserMiddleware` decodes `application/json` bodies into `$request->request`.
+
+### Request Correlation and Logging
+`RequestIdMiddleware` adds `X-Request-Id`. `RequestLoggingMiddleware` logs method/path/status/duration.
+
+### Rate Limiting
+`RateLimitMiddleware(limit=120, window=60)` with `Retry-After` and `X-RateLimit-*` headers.
+
+### ETag and Compression
+`ETagMiddleware` supports conditional requests; `CompressionMiddleware` gzips responses when accepted.
+
+### Validation (FormRequest)
+Extend `FormRequest`, define `rules()`, and call `validate($request)` in controllers.
+
+### Sessions and CSRF
+`SessionMiddleware` starts sessions. `CsrfMiddleware` verifies `X-CSRF-Token` for state-changing requests.
 
 ## Templating (Twig)
-... (unchanged)
+- Configure via `config/view.php`
+- Render: `ViewManager::render('home.html.twig', ['title' => 'Home'])`
+- Use `BaseController::view($views, 'template', $data)` for convenience
 
 ## Dependency Injection
-... (unchanged)
+PHP-DI container built in `Application::buildContainer()`. Bind services in `config/container.php`. Controllers can type-hint services in constructors.
 
 ## Database (Doctrine DBAL)
-... (unchanged)
+Configure via `DATABASE_URL` or `DB_*`. Inject `Doctrine\DBAL\Connection` into constructors and use `fetchAllAssociative`, `executeQuery`, etc.
 
 ## Caching
-... (unchanged)
+PSR-16 cache via `CacheInterface` bound to Symfony Cache (ArrayAdapter by default). Swap to `FilesystemAdapter` or Redis easily.
 
 ## Logging
-... (unchanged)
+Monolog logs to `sparkify/storage/logs/sparkify.log`. Inject `Psr\Log\LoggerInterface` to log structured data.
 
 ## CLI Tooling
-... (unchanged)
+- `php bin/sparkify route:list` — list routes
+- `php bin/sparkify make:controller FooController` — scaffold controller
+- Makefile targets: `make up`, `make down`, `make phpunit`, `make build`
+
+### Scaffolding Generators
+Use `make:controller` to bootstrap a controller with an `index` action.
 
 ## URL Generation
-... (unchanged)
+`Sparkify\Core\Routing\UrlGenerator` builds URLs from route names and params.
+```php
+$gen = new Sparkify\Core\Routing\UrlGenerator($router->list());
+$path = $gen->route('api.v1.articles.show', ['id' => 42]); // /api/v1/articles/42
+```
 
 ## HTTP Clients
-... (unchanged)
+Use Symfony HttpClient or Guzzle for integrations.
+```php
+$client = Symfony\Component\HttpClient\HttpClient::create();
+$response = $client->request('GET', 'https://api.example.com');
+```
+```php
+$guzzle = new GuzzleHttp\Client();
+$res = $guzzle->get('https://api.example.com');
+```
 
 ## Frontend (Next.js)
-... (unchanged)
+Next.js app in `web/` proxies `/api/*` to `http://localhost:8000/api/*` via `next.config.mjs`. Pages live in `web/app`.
 
 ## API Examples
-... (unchanged)
+- `GET /api/health` — health info and service checks
+- `GET /api/metrics` — uptime and memory usage
+- `GET /api/v1/hello/{name}` — greeting
 
 ## How to Use
-... (unchanged)
+Follow the checklist, then generate a controller, add routes, validate requests, and optionally render views. See the example under [Build a Feature (Example)](#build-a-feature-example).
+
+### Build a Feature (Example)
+1) Generate controller
+```bash
+cd sparkify
+php bin/sparkify make:controller ArticlesController
+```
+2) Implement actions
+```php
+public function index(): array { return ['articles' => []]; }
+public function show(Request $r, string $id): array { return ['id' => $id]; }
+```
+3) Wire routes
+```php
+$router->get('/api/v1/articles', [\App\Http\Controllers\ArticlesController::class, 'index'], 'api.v1.articles.index');
+$router->get('/api/v1/articles/{id}', [\App\Http\Controllers\ArticlesController::class, 'show'], 'api.v1.articles.show');
+```
+4) Validate (optional)
+```php
+use Sparkify\Core\Validation\FormRequest; use Respect\Validation\Validator as v;
+class ShowArticleRequest extends FormRequest { public function rules(): array { return ['id' => v::intType()->min(1)]; }}
+// (new ShowArticleRequest())->validate($request);
+```
+5) Render view (optional)
+```php
+use Sparkify\Core\Http\BaseController; use Sparkify\Core\View\ViewManager;
+final class ArticlesController extends BaseController { public function home(ViewManager $views) { return $this->view($views, 'home.html.twig', ['title'=>'Home','heading'=>'Welcome']); }}
+```
+6) Protect (optional)
+- Add `JwtAuthMiddleware` or custom middleware near the top of the pipeline
+- For browsers, include `X-CSRF-Token` from the session
+
+---
 
 ## Advanced Topics
 ### Grouping and route-specific middleware
@@ -147,28 +296,32 @@ Sparkify pairs a lightweight PHP 8+ runtime (FastRoute, HttpFoundation, PHP-DI) 
 - CSRF 419: include `X-CSRF-Token` from session on state-changing requests
 
 ## Security
-... (unchanged)
+- Set strong `JWT_SECRET` in production
+- Restrict CORS; run behind TLS
 
 ## Testing
-... (unchanged)
+- `cd sparkify && composer test`
+- Add tests in `sparkify/tests/` (PHPUnit 11.x)
 
 ## Linting & Formatting
-... (unchanged; add `composer stan` for static analysis)
+- PHP CS Fixer, ESLint, Prettier, EditorConfig
+- Static analysis: `composer stan`
 
 ## CI/CD
-... (unchanged)
+GitHub Actions builds frontend and runs PHP unit tests on PRs and pushes.
 
 ## Performance & Tuning
-... (unchanged)
+Use PHP 8.3+, enable opcache, and keep middleware lean. Prefer JSON where possible and avoid blocking I/O in requests.
 
 ## Observability & Deployment
-... (unchanged)
+Include `X-Request-Id` in logs, expose `/api/health` for orchestrators, and ship logs/metrics to a central system.
 
 ## FAQ
-... (unchanged)
+- Migrations? Integrate Doctrine Migrations or another tool alongside DBAL.
+- Auth? Use `JwtAuthMiddleware` and add guards/role checks in controllers.
 
 ## Roadmap
-... (unchanged)
+- Auth guards, schema validation, caching (Redis), queues, OpenAPI
 
 ## Contributing
 See [`CONTRIBUTING.md`](CONTRIBUTING.md).
