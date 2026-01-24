@@ -73,7 +73,7 @@ Sparkify pairs a lightweight PHP 8+ runtime (FastRoute, HttpFoundation, PHP-DI) 
 - JWT authentication and FormRequest validation
 - Twig templating and BaseController helpers
 - DI (PHP-DI), DB (Doctrine DBAL), Cache (PSR-16), Console (Symfony)
-- Next.js 14 frontend with TypeScript and Tailwind
+- Next.js 15 frontend with TypeScript and Tailwind
 
 ## Architecture
 - `sparkify/` — Sparkify PHP framework + app layer
