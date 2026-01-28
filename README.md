@@ -117,14 +117,14 @@ Backend:
 cd sparkify
 composer install
 composer run start
-# http://localhost:8000
+# open http://localhost:8000
 ```
 Frontend:
 ```bash
 cd web
 npm install
 npm run dev
-# http://localhost:3000
+# open http://localhost:3000
 ```
 
 ### Checklist
